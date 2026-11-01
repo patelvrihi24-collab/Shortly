@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: shortly
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shortly
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
