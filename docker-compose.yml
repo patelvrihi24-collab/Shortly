@@ -1,0 +1,19 @@
+services:                          # the list of containers to run
+  postgres:                        # our name for the database container
+    image: postgres:16             # official Postgres, version 16
+    environment:                   # settings applied on the FIRST start only
+      POSTGRES_DB: shortly         # create a database named shortly
+      POSTGRES_USER: postgres      # with this user...
+      POSTGRES_PASSWORD: postgres  # ...and this password (fine locally, never in production)
+    ports:
+      - "127.0.0.1:5432:5432"      # HOST_IP:HOST_PORT:CONTAINER_PORT. Only this PC can connect
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # keep DB files in a named volume so data survives restarts
+
+  redis:
+    image: redis:7                 # official Redis, used for caching in Phase 2
+    ports:
+      - "127.0.0.1:6379:6379"      # same localhost-only rule
+
+volumes:
+  pgdata:                          # declares the named volume used above

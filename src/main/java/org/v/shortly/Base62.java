@@ -1,4 +1,6 @@
-public final class Base62{
+package org.v.shortly;
+
+public final class Base62 {
     private static final String CHARS =
             "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     public static String encode(long num){
