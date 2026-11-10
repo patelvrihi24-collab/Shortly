@@ -28,4 +28,13 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));                      // join several errors into one text
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);   // 400
     }
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ProblemDetail handleEmailTaken(EmailAlreadyExistsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());          // 409
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleBadCredentials(InvalidCredentialsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());      // 401
+    }
 }

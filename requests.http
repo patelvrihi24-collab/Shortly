@@ -1,11 +1,40 @@
-### Shorten a URL
-POST http://localhost:8080/api/v1/urls
+### Register
+POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
-{"url": "https://www.example.com/some/very/long/path"}
+{"email": "me@example.com", "password": "SuperSecret123"}
 
-### Invalid URL (should return 400)
-POST http://localhost:8080/api/v1/urls
+### Login (stores the token)
+POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
-{"url": "javascript:alert(1)"}
+{"email": "me@example.com", "password": "SuperSecret123"}
+
+> {% client.global.set("token", response.body.token); %}
+
+### Wrong password (expect 401)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{"email": "me@example.com", "password": "wrong-password"}
+
+### Create a link as me
+
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{"url": "https://spring.io"}
+
+> {% client.global.set("code", response.body.shortCode); %}
+
+### My links
+GET http://localhost:8080/api/v1/urls?page=0&size=10
+Authorization: Bearer {{token}}
+
+### My links without a token (expect 401)
+GET http://localhost:8080/api/v1/urls
+
+### Delete my link (expect 204)
+DELETE http://localhost:8080/api/v1/urls/{{code}}
+Authorization: Bearer {{token}}

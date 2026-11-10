@@ -17,7 +17,7 @@ public class RedirectController {
         this.urlService = urlService;
     }
 
-    @GetMapping("/{code:[0-9A-Za-z]{1,10}}")
+    @GetMapping("/{code:[0-9A-Za-z_-]{1,10}}")
     // {code:...} = a path variable restricted by a regex: only 1-10 letters/digits.
     // So /favicon.ico (has a dot) or /api/... never land here by accident.
     public ResponseEntity<Void> redirect(@PathVariable String code) {

@@ -1,6 +1,11 @@
 package org.v.shortly.entity;                        // must match the folder path exactly
 
 import jakarta.persistence.*;                        // JPA annotations: Entity, Table, Id, Column...
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.v.shortly.entity.User;
+import org.v.shortly.entity.Url;
 import java.time.LocalDateTime;                      // date+time, maps to SQL TIMESTAMP
 
 @Entity                                              // this class represents a database table
@@ -24,15 +29,25 @@ public class Url {
     private LocalDateTime expiresAt;                 // null = never expires
 
     @Column(name = "click_count", nullable = false)
-    private long clickCount = 0;                     // primitive long can never be null
+    private long clickCount = 0;// primitive long can never be null
+
+    @Column(name = "user_id")
+    private Long userId;
 
     protected Url() {}                               // JPA needs an empty constructor to build objects from rows
 
     public Url(String originalUrl) {                 // the constructor our own code uses
         this.originalUrl = originalUrl;
+        this.userId = userId;
+    }
+
+    public Url(@NotBlank(message = "url must not be empty") @Size(max = 2048, message = "url must be at most 2048 characters") @Pattern(regexp = "^https?://\\S+$",
+                flags = Pattern.Flag.CASE_INSENSITIVE,
+                message = "url must start with http:// or https:// and contain no spaces") String url, Long userId) {
     }
 
     public Long getId() { return id; }
+    public Long getUserId() {return userId; }
     public String getShortCode() { return shortCode; }
     public void setShortCode(String shortCode) { this.shortCode = shortCode; }
     public String getOriginalUrl() { return originalUrl; }
