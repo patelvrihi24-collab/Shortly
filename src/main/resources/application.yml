@@ -3,6 +3,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:dev-only-secret-change-me-dev-only-secret-change-me}  # signing key
     expiration-minutes: 60
+  analytics:
+    salt: ${ANALYTICS_SALT:dev-only-salt-change-me}   # secret ingredient mixed into visitor hashes
   #short link we return (http://localhost:8080/abc) needs a base address.
   #Hardcoding it in Java would break when you deploy.
   #Putting it in config lets production override it with an environment variable.
@@ -21,3 +23,20 @@ spring:
     redis:
       host: localhost
       port: 6379
+  server:
+    port: ${PORT:8080}                                  # cloud platforms tell you the port via a PORT variable
+    shutdown: graceful                                  # on stop, finish in-flight requests (and flush the click queue)
+    forward-headers-strategy: ${FORWARD_HEADERS:none}   # behind a proxy set FORWARD_HEADERS=native so getRemoteAddr() is the real client
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health                               # expose ONLY health; /actuator/env would leak configuration
+    endpoint:
+      health:
+        probes:
+          enabled: true                                 # adds /actuator/health/liveness and /readiness
+        group:
+          readiness:
+            include: readinessState,db                  # "ready" depends on Postgres but NOT on Redis

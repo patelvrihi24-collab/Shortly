@@ -2,7 +2,7 @@
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
-{"email": "me@example.com", "password": "SuperSecret123"}
+{"email": "other@example.com", "password": "SuperSecret123"}
 
 ### Login (stores the token)
 POST http://localhost:8080/api/v1/auth/login
@@ -19,7 +19,6 @@ Content-Type: application/json
 {"email": "me@example.com", "password": "wrong-password"}
 
 ### Create a link as me
-
 POST http://localhost:8080/api/v1/urls
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -38,3 +37,17 @@ GET http://localhost:8080/api/v1/urls
 ### Delete my link (expect 204)
 DELETE http://localhost:8080/api/v1/urls/{{code}}
 Authorization: Bearer {{token}}
+
+### Stats for my link (last 7 days)
+GET http://localhost:8080/api/v1/urls/{{code}}/stats?days=7
+Authorization: Bearer {{token}}
+
+### Simulated click: iPhone Safari arriving from Hacker News
+GET http://localhost:8080/{{code}}
+User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1
+Referer: https://news.ycombinator.com/item?id=1
+
+### Simulated click: Windows Chrome arriving from Google
+GET http://localhost:8080/{{code}}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+Referer: https://www.google.com/search?q=shortly

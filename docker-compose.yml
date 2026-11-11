@@ -9,11 +9,40 @@ services:                          # the list of containers to run
       - "127.0.0.1:5432:5432"      # HOST_IP:HOST_PORT:CONTAINER_PORT. Only this PC can connect
     volumes:
       - pgdata:/var/lib/postgresql/data   # keep DB files in a named volume so data survives restarts
+    healthcheck: # "is the database actually ready?", not just "is the container up?"
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d shortly" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7                 # official Redis, used for caching in Phase 2
     ports:
       - "127.0.0.1:6379:6379"      # same localhost-only rule
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: [ "full" ]                                 # only starts with --profile full, so plain "up -d" still runs just the databases
+    build: .                                           # build the image from the Dockerfile above
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment: # env vars override application.yml
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shortly   # "postgres" = the service name; inside Docker, localhost means the app itself
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-dev-only-secret-change-me}
+      ANALYTICS_SALT: ${ANALYTICS_SALT:-dev-only-salt-change-me}
+      APP_BASE_URL: http://localhost:8080
+    depends_on:
+      postgres:
+        condition: service_healthy                     # wait until Postgres passes its health check
+      redis:
+          condition: service_healthy
 
 volumes:
   pgdata:                          # declares the named volume used above

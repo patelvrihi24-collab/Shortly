@@ -4,8 +4,7 @@ import jakarta.persistence.*;                        // JPA annotations: Entity,
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.v.shortly.entity.User;
-import org.v.shortly.entity.Url;
+
 import java.time.LocalDateTime;                      // date+time, maps to SQL TIMESTAMP
 
 @Entity                                              // this class represents a database table
@@ -36,14 +35,9 @@ public class Url {
 
     protected Url() {}                               // JPA needs an empty constructor to build objects from rows
 
-    public Url(String originalUrl) {                 // the constructor our own code uses
+    public Url(String originalUrl, Long userId) {                 // the constructor our own code uses
         this.originalUrl = originalUrl;
         this.userId = userId;
-    }
-
-    public Url(@NotBlank(message = "url must not be empty") @Size(max = 2048, message = "url must be at most 2048 characters") @Pattern(regexp = "^https?://\\S+$",
-                flags = Pattern.Flag.CASE_INSENSITIVE,
-                message = "url must start with http:// or https:// and contain no spaces") String url, Long userId) {
     }
 
     public Long getId() { return id; }

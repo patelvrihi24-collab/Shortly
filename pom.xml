@@ -111,6 +111,31 @@
             <version>0.12.6</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>      <!-- health endpoints for Docker/cloud -->
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>   <!-- generates Swagger UI from your controllers -->
+            <version>3.1.1</version>                                       <!-- not managed by Spring Boot, so we pin it -->
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>        <!-- Spring Boot's glue for Testcontainers -->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>      <!-- starts/stops containers around tests -->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>         <!-- the Postgres container class -->
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
