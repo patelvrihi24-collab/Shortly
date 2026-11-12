@@ -1,0 +1,22 @@
+name: CI                                  # the name shown in the Actions tab and on the badge
+
+on:
+  push:
+    branches: [main]                       # run on every push to main
+  pull_request:                            # and on every pull request
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest                 # a fresh Linux VM; it has Docker, so Testcontainers works
+    timeout-minutes: 15                    # kill a stuck run instead of burning minutes
+    steps:
+      - uses: actions/checkout@v4          # download your repository into the VM
+      - uses: actions/setup-java@v4        # install a JDK
+        with:
+          distribution: temurin
+          java-version: '21'               # same Java as your project
+          cache: maven                     # cache ~/.m2 between runs so builds get faster
+      - name: Make the Maven wrapper executable
+        run: chmod +x mvnw                 # files created on Windows often lose the executable bit in Git
+      - name: Build and run all tests
+        run: ./mvnw -B verify              # -B = batch mode (clean logs); verify = compile, test, package
