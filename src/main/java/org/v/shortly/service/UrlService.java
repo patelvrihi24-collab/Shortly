@@ -40,13 +40,16 @@ public class UrlService {
     private final UrlRepository urlRepository;
     private final StringRedisTemplate redis;                    // Spring injects this automatically
     private final String baseUrl;
+    private final boolean cacheEnabled;
 
     public UrlService(UrlRepository urlRepository,
                       StringRedisTemplate redis,
-                      @Value("${app.base-url}") String baseUrl) {
+                      @Value("${app.base-url}") String baseUrl,
+                      @Value("${app.cache.enabled:true}") boolean cacheEnabled) {
         this.urlRepository = urlRepository;
         this.redis = redis;
         this.baseUrl = baseUrl;
+        this.cacheEnabled = cacheEnabled;
     }
 
     @Transactional(readOnly = true)
@@ -116,11 +119,11 @@ public class UrlService {
 
         String cached = readCache(key);                         // 1) try Redis first
         if (cached != null) {
-            log.info("CACHE HIT  {}", shortCode);
+            log.debug("CACHE HIT  {}", shortCode);
             return cached;                                      // done: the database was never touched
         }
 
-        log.info("CACHE MISS {}", shortCode);                   // 2) fall back to Postgres
+        log.debug("CACHE MISS {}", shortCode);                   // 2) fall back to Postgres
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new NotFoundException("Short link not found: " + shortCode));
 
@@ -136,11 +139,13 @@ public class UrlService {
                 ttl = remaining;                                // ...the cache entry must not outlive the link
             }
         }
+
         writeCache(key, url.getOriginalUrl(), ttl);             // 4) store for next time
         return url.getOriginalUrl();
     }
 
     private String readCache(String key) {
+        if (!cacheEnabled) return null;
         try {
             return redis.opsForValue().get(key);                // GET key (null if missing)
         } catch (Exception e) {
@@ -150,6 +155,7 @@ public class UrlService {
     }
 
     private void writeCache(String key, String value, Duration ttl) {
+        if (!cacheEnabled) return;
         try {
             redis.opsForValue().set(key, value, ttl);           // SET key value EX <seconds>
         } catch (Exception e) {

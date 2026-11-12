@@ -11,6 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @Configuration                                              // a class that defines beans
 public class SecurityConfig {
@@ -46,5 +48,12 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();      // slow on purpose and salted, so stolen hashes are hard to crack
+    }
+
+    @Bean
+    public UserDetailsService noUsers() {                  // Spring Boot only creates its default user when NO such bean exists
+        return username -> {                               // UserDetailsService has one method, so a lambda works
+            throw new UsernameNotFoundException("Username/password login is not used; this API authenticates with JWT only");
+        };
     }
 }

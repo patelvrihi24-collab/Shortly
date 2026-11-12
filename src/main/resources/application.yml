@@ -28,6 +28,9 @@ spring:
     shutdown: graceful                                  # on stop, finish in-flight requests (and flush the click queue)
     forward-headers-strategy: ${FORWARD_HEADERS:none}   # behind a proxy set FORWARD_HEADERS=native so getRemoteAddr() is the real client
 
+  cache:
+    enabled: ${APP_CACHE_ENABLED:true}
+    
   management:
     endpoints:
       web:

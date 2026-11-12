@@ -1,53 +1,294 @@
-### Register
+### 01 Register user 1 (201 on a fresh database, 409 if it already exists)
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
-{"email": "other@example.com", "password": "SuperSecret123"}
+{"email": "me@example.com", "password": "SuperSecret123"}
 
-### Login (stores the token)
+> {%
+    client.test("registered or already exists", function () {
+        client.assert(response.status === 201 || response.status === 409, "Got " + response.status);
+    });
+%}
+
+### 02 Register the same email again (expect 409)
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{"email": "me@example.com", "password": "SuperSecret123"}
+
+> {%
+    client.test("duplicate email rejected", function () {
+        client.assert(response.status === 409, "Got " + response.status);
+    });
+%}
+
+### 03 Login user 1 (stores the token)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {"email": "me@example.com", "password": "SuperSecret123"}
 
-> {% client.global.set("token", response.body.token); %}
+> {%
+    client.test("login works", function () {
+        client.assert(response.status === 200, "Got " + response.status);
+    });
+    client.global.set("token", response.body.token);
+%}
 
-### Wrong password (expect 401)
+### 04 Wrong password (expect 401)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {"email": "me@example.com", "password": "wrong-password"}
 
-### Create a link as me
+> {%
+    client.test("wrong password rejected", function () {
+        client.assert(response.status === 401, "Got " + response.status);
+    });
+%}
+
+### 05a Garbage instead of a token (expect 401)
+GET http://localhost:8080/api/v1/urls
+Authorization: Bearer this-is-not-a-jwt
+
+> {%
+    client.test("garbage token rejected", function () {
+        client.assert(response.status === 401, "Got " + response.status);
+    });
+%}
+
+### 05b Real token with one character of the signature changed (expect 401)
+< {%
+    const t = client.global.get("token");
+    const i = t.length - 30;
+    const flipped = t.charAt(i) === "A" ? "B" : "A";
+    request.variables.set("badToken", t.substring(0, i) + flipped + t.substring(i + 1));
+%}
+GET http://localhost:8080/api/v1/urls
+Authorization: Bearer {{badToken}}
+
+> {%
+    client.test("altered signature rejected", function () {
+        client.assert(response.status === 401, "Got " + response.status);
+    });
+%}
+
+### 06 My links without a token (expect 401)
+GET http://localhost:8080/api/v1/urls
+
+> {%
+    client.test("anonymous cannot list links", function () {
+        client.assert(response.status === 401, "Got " + response.status);
+    });
+%}
+
+### 07 Create a link as user 1 (stores the code)
 POST http://localhost:8080/api/v1/urls
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {"url": "https://spring.io"}
 
-> {% client.global.set("code", response.body.shortCode); %}
+> {%
+    client.test("link created", function () {
+        client.assert(response.status === 201, "Got " + response.status);
+    });
+    client.global.set("code", response.body.shortCode);
+%}
 
-### My links
-GET http://localhost:8080/api/v1/urls?page=0&size=10
+### 08 Dangerous URL scheme (expect 400)
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
 Authorization: Bearer {{token}}
 
-### My links without a token (expect 401)
-GET http://localhost:8080/api/v1/urls
+{"url": "javascript:alert(1)"}
 
-### Delete my link (expect 204)
-DELETE http://localhost:8080/api/v1/urls/{{code}}
+> {%
+    client.test("javascript: rejected", function () {
+        client.assert(response.status === 400, "Got " + response.status);
+    });
+%}
+
+### 09 Custom alias (random, so reruns never collide; stores the alias)
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
 Authorization: Bearer {{token}}
 
-### Stats for my link (last 7 days)
-GET http://localhost:8080/api/v1/urls/{{code}}/stats?days=7
+{"url": "https://example.com/alias", "customAlias": "al{{$random.alphanumeric(8)}}"}
+
+> {%
+    client.test("alias created", function () {
+        client.assert(response.status === 201, "Got " + response.status);
+    });
+    client.global.set("alias", response.body.shortCode);
+%}
+
+### 10 Same alias again (expect 409)
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
 Authorization: Bearer {{token}}
 
-### Simulated click: iPhone Safari arriving from Hacker News
+{"url": "https://example.com/other", "customAlias": "{{alias}}"}
+
+> {%
+    client.test("duplicate alias rejected", function () {
+        client.assert(response.status === 409, "Got " + response.status);
+    });
+%}
+
+### 11 Alias too short (expect 400)
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{"url": "https://example.com/short", "customAlias": "abc"}
+
+> {%
+    client.test("short alias rejected", function () {
+        client.assert(response.status === 400, "Got " + response.status);
+    });
+%}
+
+### 12 Redirect without following it (expect 302 and the original URL)
+# @no-redirect
+GET http://localhost:8080/{{code}}
+
+> {%
+    client.test("redirects with 302", function () {
+        client.assert(response.status === 302, "Got " + response.status);
+        client.assert(response.headers.valueOf("Location") === "https://spring.io", "Wrong Location header");
+    });
+%}
+
+### 13 Simulated click: iPhone Safari arriving from Hacker News
+# @no-redirect
 GET http://localhost:8080/{{code}}
 User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1
 Referer: https://news.ycombinator.com/item?id=1
 
-### Simulated click: Windows Chrome arriving from Google
+> {%
+    client.test("click redirects", function () {
+        client.assert(response.status === 302, "Got " + response.status);
+    });
+%}
+
+### 14 Simulated click: Windows Chrome arriving from Google
+# @no-redirect
 GET http://localhost:8080/{{code}}
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
 Referer: https://www.google.com/search?q=shortly
+
+> {%
+    client.test("click redirects", function () {
+        client.assert(response.status === 302, "Got " + response.status);
+    });
+%}
+
+### 15 Stats (wait about 2 seconds after the clicks, then run this one by itself and check the numbers)
+GET http://localhost:8080/api/v1/urls/{{code}}/stats?days=7
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("stats returned", function () {
+        client.assert(response.status === 200, "Got " + response.status);
+    });
+%}
+
+### 16 My links
+GET http://localhost:8080/api/v1/urls?page=0&size=10
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("links listed", function () {
+        client.assert(response.status === 200, "Got " + response.status);
+    });
+%}
+
+### 17 Register user 2 (201 on a fresh database, 409 if it already exists)
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{"email": "other@example.com", "password": "SuperSecret123"}
+
+> {%
+    client.test("registered or already exists", function () {
+        client.assert(response.status === 201 || response.status === 409, "Got " + response.status);
+    });
+%}
+
+### 18 Login user 2 (stores token2, so user 1's token stays intact)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{"email": "other@example.com", "password": "SuperSecret123"}
+
+> {%
+    client.test("login works", function () {
+        client.assert(response.status === 200, "Got " + response.status);
+    });
+    client.global.set("token2", response.body.token);
+%}
+
+### 19 User 2 tries to delete user 1's link (expect 404)
+DELETE http://localhost:8080/api/v1/urls/{{code}}
+Authorization: Bearer {{token2}}
+
+> {%
+    client.test("cannot delete someone else's link", function () {
+        client.assert(response.status === 404, "Got " + response.status);
+    });
+%}
+
+### 20 User 2 asks for user 1's stats (expect 404)
+GET http://localhost:8080/api/v1/urls/{{code}}/stats?days=7
+Authorization: Bearer {{token2}}
+
+> {%
+    client.test("cannot read someone else's stats", function () {
+        client.assert(response.status === 404, "Got " + response.status);
+    });
+%}
+
+### 21 User 1 deletes the link (expect 204)
+DELETE http://localhost:8080/api/v1/urls/{{code}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("deleted", function () {
+        client.assert(response.status === 204, "Got " + response.status);
+    });
+%}
+
+### 22 Redirect after delete (expect 404: the cache entry was evicted too)
+# @no-redirect
+GET http://localhost:8080/{{code}}
+
+> {%
+    client.test("deleted link is gone", function () {
+        client.assert(response.status === 404, "Got " + response.status);
+    });
+%}
+
+### 23 Link with a one-day expiry (stores expCode)
+POST http://localhost:8080/api/v1/urls
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{"url": "https://example.com/expiry", "ttlDays": 1}
+
+> {%
+    client.test("expiry link created", function () {
+        client.assert(response.status === 201, "Got " + response.status);
+    });
+    client.global.set("expCode", response.body.shortCode);
+%}
+
+### 24 Open the expiry link once so it gets cached (expect 302)
+# @no-redirect
+GET http://localhost:8080/{{expCode}}
+
+> {%
+    client.test("expiry link redirects", function () {
+        client.assert(response.status === 302, "Got " + response.status);
+    });
+%}
