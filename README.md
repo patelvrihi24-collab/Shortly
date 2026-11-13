@@ -2,9 +2,7 @@
 
 A URL shortener REST API built with **Java 21, Spring Boot, PostgreSQL and Redis**. It is designed around the problems a real shortener has to solve: a read-heavy redirect path, cache invalidation, abuse protection, ownership and privacy-conscious analytics.
 
-**Live demo:** `TODO: add your deployed URL` &nbsp;|&nbsp; **API docs:** `TODO: <your-url>/swagger-ui/index.html`
-
-> Free hosting tiers may sleep when idle, so the first request after a pause can be slow.
+ **API docs:** `TODO: <your-url>/swagger-ui/index.html`
 
 ## Features
 
@@ -123,10 +121,10 @@ The API is then available at `http://localhost:8080`.
 
 Load test: 50 virtual users, 30 seconds, `GET /{code}` (k6, script in `load-test/`). Everything ran on one laptop, so absolute numbers are conservative; the relative difference is the point.
 
-| | Requests/s | Avg latency | p(95) latency |
-|---|---|---|---|
-| Redis cache ON | TODO | TODO | TODO |
-| Redis cache OFF | TODO | TODO | TODO |
+                 | Requests/s   | Avg latency | p(95) latency |
+|----------------|--------------|-------------|---------------|
+| Redis cache ON |1614.675406/s | 8.8 ms      | 17.7 ms       |
+|Redis cache OFF |1118.977123/s | 42.81 ms    | 64.86 ms      |
 
 ## Project structure
 
